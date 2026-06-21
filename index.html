@@ -107,6 +107,11 @@
   textarea{width:100%; font-family:var(--body); font-size:15px; border:1px solid var(--line); border-radius:14px;
     padding:14px; resize:vertical; background:#fff; color:var(--ink)}
   textarea:focus{outline:2px solid color-mix(in srgb,var(--ink) 30%,#fff); outline-offset:1px}
+  input{width:100%; font-family:var(--body); font-size:16px; border:1px solid var(--line); border-radius:14px;
+    padding:14px; background:#fff; color:var(--ink)}
+  input:focus{outline:2px solid color-mix(in srgb,var(--ink) 30%,#fff); outline-offset:1px}
+  .roomtag{font-family:var(--disp); font-size:19px; color:var(--ink)}
+  .roomtag b{letter-spacing:.02em}
   .chips{display:flex; flex-direction:column; gap:8px; margin:2px 0 14px}
   .chip{text-align:left; font-family:var(--body); font-size:14.5px; line-height:1.5; padding:12px 14px;
     border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; transition:.13s}
@@ -131,27 +136,24 @@
     <div class="eyebrow">우리집 마음 지도</div>
     <p class="lead">시험이 아니에요.<br>우리가 서로 얼마나 다른지 보는 거예요.</p>
     <p class="sub">각자 같은 질문에 자기를 두고 답해요. 맞고 틀린 답은 없어요. 끝나면 우리가 어떻게 다른지 한눈에 보이고, 각자 ‘이번 주에 해볼 한 가지’를 골라요.</p>
-    <p class="hint" style="margin:0 0 8px">이 폰에서 검사할 사람을 골라요</p>
-    <div class="who">
-      <button onclick="start('아빠')"><span class="swatch" style="background:var(--dad)"></span><div>아빠가 할게요<small>나는 아빠</small></div></button>
-      <button onclick="start('엄마')"><span class="swatch" style="background:var(--mom)"></span><div>엄마가 할게요<small>나는 엄마</small></div></button>
-      <button onclick="start('서연')"><span class="swatch" style="background:var(--seoyeon)"></span><div>서연이가 할게요<small>나는 서연이</small></div></button>
-      <button onclick="start('서빈')"><span class="swatch" style="background:var(--seobin)"></span><div>서빈이가 할게요<small>나는 서빈이</small></div></button>
+    <div class="card">
+      <h3 style="font-size:17px; margin-bottom:4px">우리 가족 방</h3>
+      <p class="sub" style="margin:6px 0 12px">가족이 같은 방 이름을 쓰면, 각자 폰에서 한 게 자동으로 모여요. 처음이면 아무 이름이나 정해서 가족에게 알려 주세요.</p>
+      <input id="room-code" inputmode="text" autocomplete="off" placeholder="예: 장가네-2026">
+      <button class="btn block" style="margin-top:12px" onclick="enterRoom()">방 들어가기 →</button>
     </div>
-    <div style="height:1px; background:var(--line); margin:24px 0 16px"></div>
-    <button onclick="go('s-compare')" style="width:100%; font-family:var(--body); font-size:15px; font-weight:600; padding:13px; border-radius:14px; border:1px solid var(--ink); background:none; color:var(--ink); cursor:pointer">결과 보기 · 코드 모아서 비교 →</button>
-    <p class="hint" style="text-align:center; margin:8px 0 0">가족이 코드를 다 보냈으면 여기서 모아 봐요.</p>
-    <button class="ghost" onclick="startGroup()" style="display:block; text-align:center; width:100%">한자리에 모였나요? 폰 하나로 다 같이 풀기 →</button>
+    <button class="ghost" onclick="startGroup()" style="display:block; text-align:center; width:100%">한자리에 모였나요? 폰 하나로 다 같이 (인터넷 없이) →</button>
   </section>
 
-  <!-- 1c. 다 같이 모드: 차례 선택 -->
+  <!-- 1c. 로비: 차례 선택 (방/폰하나 공용) -->
   <section class="scene" id="s-turn">
-    <div class="eyebrow">다 같이 · 폰 하나로</div>
-    <p class="lead" style="margin-bottom:6px">지금 누구 차례예요?</p>
-    <p class="sub">한 명씩 자기 차례에 답하고, 끝나면 옆 사람에게 폰을 넘겨줘요.</p>
+    <div class="eyebrow" id="turn-eyebrow">가족 방</div>
+    <div id="turn-head"></div>
+    <p class="lead" id="turn-lead" style="margin:10px 0 6px">누가 할 차례예요?</p>
+    <p class="sub" id="turn-sub">자기 이름을 누르고 답하면, 결과가 방에 자동으로 올라가요.</p>
     <div class="who" id="turn-roster"></div>
-    <button class="btn block" id="turn-result" disabled onclick="seeGroupResult()" style="margin-top:18px">우리 결과 보기</button>
-    <button class="ghost" onclick="go('s-home')" style="display:block; text-align:center; width:100%">← 처음으로</button>
+    <button class="btn block" id="turn-result" disabled onclick="seeResult()" style="margin-top:18px">우리 결과 보기</button>
+    <button class="ghost" onclick="leaveRoom()" style="display:block; text-align:center; width:100%">← 처음으로</button>
   </section>
 
   <!-- 2. 검사 -->
@@ -173,7 +175,7 @@
   <section class="scene" id="s-me">
     <div class="eyebrow" id="me-who"></div>
     <p class="lead" style="margin-bottom:6px">나는 이런 사람이에요.</p>
-    <p class="sub">나만 보는 화면이에요. 내가 어떤 답을 했는지는 내 폰에만 남아요.</p>
+    <p class="sub">5축 점수만 가족 방에 올라가요. 내가 고른 답 하나하나는 이 폰에만 남아요.</p>
     <div class="card">
       <p class="caption">여기 나온 건 ‘타고난 결’이에요. 높고 낮음에 좋고 나쁨은 없어요 — 그냥 나라는 사람의 방향이에요.</p>
       <div id="me-axes"></div>
@@ -181,50 +183,15 @@
 
     <div class="card">
       <h3 style="font-size:17px; margin-bottom:4px">이번 주에 해볼 나의 한 가지</h3>
-      <p class="sub" style="margin:6px 0 12px">딱 하나만 골라요. 내 결에 맞게 몇 개 추천해 뒀어요 — 마음에 드는 걸 누르거나, 직접 적어도 돼요. (이건 나만 봐요)</p>
+      <p class="sub" style="margin:6px 0 12px">딱 하나만 골라요. 내 결에 맞게 몇 개 추천해 뒀어요 — 마음에 드는 걸 누르거나, 직접 적어도 돼요.</p>
       <div class="chips" id="me-chips"></div>
       <textarea id="me-one" rows="2" placeholder="또는 직접 적기"></textarea>
-    </div>
-
-    <div class="card">
-      <h3 style="font-size:17px; margin-bottom:4px">내 결과 코드</h3>
-      <p class="sub" style="margin:6px 0 0">이 코드를 가족 단톡에 보내요. <b>이게 유일한 저장이에요</b> — 안 보내고 화면을 닫거나 새로고침하면 결과가 사라져요. 가족 코드가 다 모이면 누구든 ‘결과 보기’에서 붙여넣어요.</p>
-      <div class="codebox" id="me-code">…</div>
-      <button class="btn block" id="copybtn" onclick="copyCode()">코드 복사하기</button>
     </div>
 
     <p class="fold" onclick="this.classList.toggle('open')">내가 한 답 다시 보기 (나만 보임)</p>
     <div id="me-raw"></div>
 
-    <button class="ghost" onclick="go('s-compare')" style="display:block; text-align:center; width:100%">가족 코드가 모였으면 · 비교 보기 →</button>
-  </section>
-
-  <!-- 3b. 다 같이 모드: 각자 미니 결과 -->
-  <section class="scene" id="s-turnme">
-    <div class="eyebrow" id="turn-who"></div>
-    <p class="lead" style="margin-bottom:6px">나는 이런 사람이에요.</p>
-    <p class="sub">좋고 나쁨은 없어요 — 그냥 나의 방향이에요.</p>
-    <div class="card"><div id="turn-axes"></div></div>
-    <div class="card">
-      <h3 style="font-size:17px; margin-bottom:4px">이번 주에 해볼 나의 한 가지</h3>
-      <p class="sub" style="margin:6px 0 12px">딱 하나만 골라요. 누르거나 직접 적어도 돼요.</p>
-      <div class="chips" id="turn-chips"></div>
-      <textarea id="turn-one" rows="2" placeholder="또는 직접 적기"></textarea>
-    </div>
-    <button class="btn block" onclick="saveTurn()">저장하고 다음 사람에게 넘기기 →</button>
-  </section>
-
-  <!-- 4. 비교 입력 -->
-  <section class="scene" id="s-compare">
-    <div class="eyebrow">비교 화면</div>
-    <p class="lead" style="margin-bottom:6px">가족 코드를 붙여넣어요.</p>
-    <p class="sub">단톡에 올라온 코드를 한꺼번에 붙여넣어도 돼요. 알아서 골라내요.</p>
-    <div class="card">
-      <textarea id="paste" rows="6" placeholder="GAP-…&#10;GAP-…&#10;GAP-…&#10;GAP-…" oninput="scan()"></textarea>
-      <div class="hint" id="scanhint">아직 코드가 없어요.</div>
-    </div>
-    <button class="btn block" id="seebtn" disabled onclick="reveal()">비교 결과 보기</button>
-    <button class="ghost" onclick="go('s-home')" style="display:block; text-align:center; width:100%">← 처음으로</button>
+    <button class="btn block" id="me-save" style="margin-top:22px" onclick="saveResult()">저장하기 →</button>
   </section>
 
   <!-- 5. 비교 결과 -->
@@ -245,6 +212,22 @@
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script>
+  // Firebase (가족 방 자동 공유) — 웹 apiKey는 비밀이 아니며 보안은 DB 규칙으로 잡는다
+  const firebaseConfig = {
+    apiKey: "AIzaSyAMiALxWmpvLjNOLPprll16B7WDerDAml4",
+    authDomain: "maeum-map.firebaseapp.com",
+    databaseURL: "https://maeum-map-default-rtdb.firebaseio.com",
+    projectId: "maeum-map",
+    storageBucket: "maeum-map.firebasestorage.app",
+    messagingSenderId: "890003054791",
+    appId: "1:890003054791:web:1e35f119d05e14cb50dee2"
+  };
+  try { firebase.initializeApp(firebaseConfig); window.fdb = firebase.database(); }
+  catch(e){ console.error('firebase init 실패', e); }
+</script>
 <script>
 const AXES = [
   { key:'a', name:'에너지', left:'혼자 충전하는 편', right:'함께 충전하는 편',
@@ -356,9 +339,12 @@ buildQ(null);
 
 let me = { role:null, ans:Array(Q.length).fill(null), one:'' };
 let idx = 0;
-let mode = 'solo';                 // 'solo'(코드 교환) | 'group'(폰 하나 돌려쓰기)
+let mode = 'room';                 // 'room'(가족 방·Firebase) | 'group'(폰 하나 돌려쓰기)
 const ROSTER = ['아빠','엄마','서연','서빈'];
 let collected = [];                // group 모드에서 모은 결과 [{r,s,o}]
+let room = '';                     // 현재 방 코드
+let roomData = {};                 // 방 결과 { 역할: {s,o} }
+let roomRef = null;
 
 function go(id){
   document.querySelectorAll('.scene').forEach(s=>s.classList.remove('on'));
@@ -373,35 +359,82 @@ function begin(role){
   document.getElementById('tot').textContent = Q.length;
   go('s-quiz'); renderQ();
 }
-function start(role){ mode='solo'; begin(role); }    // 각자 폰 모드
 
-// ── 다 같이, 폰 하나로 ──
-function startGroup(){ mode='group'; collected=[]; renderTurn(); go('s-turn'); }
+// ── 가족 방 (Firebase 자동 공유) ──
+function cleanCode(s){ return (s||'').trim().replace(/[.#$\[\]\/\s]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40); }
+function enterRoom(){
+  const code = cleanCode(document.getElementById('room-code').value);
+  if(!code){ alert('방 이름을 적어 주세요.'); return; }
+  if(typeof firebase==='undefined' || !window.fdb){ alert('인터넷 연결이 필요해요. 연결을 확인하거나, 한자리에 모였다면 ‘폰 하나로’를 써요.'); return; }
+  mode='room'; room=code;
+  if(roomRef) roomRef.off();
+  roomRef = window.fdb.ref('rooms/'+room);
+  roomRef.on('value', snap=>{
+    roomData = snap.val() || {};
+    if(document.getElementById('s-turn').classList.contains('on')) renderTurn();
+  }, err=>{ console.warn('room read', err); });
+  renderTurn(); go('s-turn');
+}
+function leaveRoom(){ if(roomRef){ roomRef.off(); roomRef=null; } room=''; roomData={}; go('s-home'); }
+
+// ── 다 같이, 폰 하나로 (오프라인) ──
+function startGroup(){ mode='group'; collected=[]; room=''; renderTurn(); go('s-turn'); }
+
+// 두 모드 공통: 누가 끝냈는지 { 역할: {s,o} }
+function doneMap(){
+  if(mode==='room') return roomData || {};
+  const m={}; collected.forEach(c=>{ m[c.r]={s:c.s,o:c.o}; }); return m;
+}
 function renderTurn(){
+  const dm = doneMap();
+  const doneCount = ROSTER.filter(r=>dm[r]).length;
+  const hd=document.getElementById('turn-head');
+  if(mode==='room'){
+    hd.style.display='block';
+    hd.innerHTML='<div class="roomtag">방 <b>'+room+'</b></div>'+
+      '<p class="hint" style="margin:4px 0 0">이 방 이름을 가족에게 알려 주세요. 같은 방이면 각자 폰에서 한 게 자동으로 모여요.</p>';
+    document.getElementById('turn-eyebrow').textContent='가족 방';
+    document.getElementById('turn-lead').textContent='누가 할 차례예요?';
+    document.getElementById('turn-sub').textContent='자기 이름을 누르고 답하면, 결과가 방에 자동으로 올라가요.';
+  } else {
+    hd.style.display='none';
+    document.getElementById('turn-eyebrow').textContent='다 같이 · 폰 하나로';
+    document.getElementById('turn-lead').textContent='지금 누구 차례예요?';
+    document.getElementById('turn-sub').textContent='한 명씩 자기 차례에 답하고, 끝나면 옆 사람에게 폰을 넘겨줘요.';
+  }
   const box=document.getElementById('turn-roster'); box.innerHTML='';
-  const done = collected.map(c=>c.r);
   ROSTER.forEach(role=>{
     const b=document.createElement('button');
-    const fin = done.includes(role);
+    const fin = !!dm[role];
     b.innerHTML='<span class="swatch" style="background:'+COLOR[role]+'"></span><div>'+
       role+(fin?' <b style="color:'+COLOR[role]+'">✓ 했어요</b>':'')+'<small>'+(fin?'다시 하려면 눌러요':'아직이에요')+'</small></div>';
-    b.onclick=()=>startTurn(role);
+    b.onclick=()=>pickRole(role, fin);
     box.appendChild(b);
   });
   const rb=document.getElementById('turn-result');
-  rb.disabled = collected.length<2;
-  rb.textContent = collected.length<2 ? '우리 결과 보기' : '우리 결과 보기 ('+collected.length+'명)';
+  rb.disabled = doneCount<2;
+  rb.textContent = doneCount<2 ? '우리 결과 보기' : '우리 결과 보기 ('+doneCount+'명)';
 }
-function startTurn(role){ mode='group'; begin(role); }
-function saveTurn(){
-  const one = document.getElementById('turn-one').value.trim();
-  const rec = { r:me.role, s:scores(me.ans), o:one };
-  const i = collected.findIndex(c=>c.r===me.role);
-  if(i>=0) collected[i]=rec; else collected.push(rec);
+function pickRole(role, fin){
+  if(fin && !confirm(role+'은(는) 이미 했어요. 다시 할까요? (기존 결과는 새 걸로 바뀌어요)')) return;
+  begin(role);
+}
+function saveResult(){
+  const one = document.getElementById('me-one').value.trim();
+  const rec = { s:scores(me.ans), o:one };
+  if(mode==='room' && roomRef){
+    roomData[me.role] = rec;                       // 낙관적 반영
+    roomRef.child(me.role).set(rec).catch(()=>alert('저장이 안 됐어요. 인터넷을 확인해 주세요.'));
+  } else {
+    const r2 = { r:me.role, s:rec.s, o:rec.o };
+    const i = collected.findIndex(c=>c.r===me.role);
+    if(i>=0) collected[i]=r2; else collected.push(r2);
+  }
   renderTurn(); go('s-turn');
 }
-function seeGroupResult(){
-  parsed = collected.slice().sort((a,b)=>(ORDER[a.r]??9)-(ORDER[b.r]??9));
+function seeResult(){
+  const dm = doneMap();
+  parsed = ROSTER.filter(r=>dm[r]).map(r=>({ r, s:dm[r].s, o:dm[r].o }));
   reveal();
 }
 function renderQ(){
@@ -438,22 +471,12 @@ function pct(score){ return ((score-1)/4)*100; }
 
 function finish(){
   const sc = scores(me.ans);
-  if(mode==='group'){
-    document.getElementById('turn-who').textContent = me.role + '의 결과';
-    const w = document.getElementById('turn-axes'); w.innerHTML='';
-    AXES.forEach((ax,i)=>{
-      w.appendChild(axisBlock(ax, [{role:me.role, p:pct(sc[i])}], false));
-    });
-    document.getElementById('turn-one').value='';
-    renderChips(sc, 'turn-chips', 'turn-one');
-    go('s-turnme');
-    return;
-  }
   document.getElementById('me-who').textContent = me.role + '의 결과';
   const wrap = document.getElementById('me-axes'); wrap.innerHTML='';
   AXES.forEach((ax,i)=>{
     wrap.appendChild(axisBlock(ax, [{role:me.role, p:pct(sc[i])}], false));
   });
+  document.getElementById('me-one').value='';
   renderChips(sc, 'me-chips', 'me-one');
   const raw = document.getElementById('me-raw'); raw.innerHTML='';
   Q.forEach((q,i)=>{
@@ -461,8 +484,7 @@ function finish(){
     d.innerHTML = q.text + ' — <b>'+SCALE[me.ans[i]-1]+'</b>';
     raw.appendChild(d);
   });
-  document.getElementById('me-one').value='';
-  buildCode();
+  document.getElementById('me-save').textContent = (mode==='room' ? '저장하고 가족 방에 올리기' : '저장하고 다음 사람에게 넘기기') + ' →';
   go('s-me');
 }
 
@@ -513,40 +535,7 @@ function axisBlock(ax, dots, withGap){
   return el;
 }
 
-function enc(o){ return 'GAP-' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/,''); }
-function dec(code){
-  try{
-    let b = code.replace('GAP-','').trim();
-    while(b.length%4) b+='=';
-    return JSON.parse(decodeURIComponent(escape(atob(b))));
-  }catch(e){ return null; }
-}
-function buildCode(){
-  const sc = scores(me.ans);
-  const code = enc({ r:me.role, s:sc });   // 공유 코드엔 축 점수만 — 주관식은 본인 폰에만
-  document.getElementById('me-code').textContent = code;
-  me.code = code;
-}
-function copyCode(){
-  navigator.clipboard.writeText(me.code).then(()=>{
-    const b=document.getElementById('copybtn'); b.textContent='복사됐어요 ✓';
-    setTimeout(()=>b.textContent='코드 복사하기',1600);
-  }).catch(()=>{ alert('복사가 안 되면 위 코드를 길게 눌러 직접 복사하세요.'); });
-}
-
 let parsed = [];
-function scan(){
-  const txt = document.getElementById('paste').value;
-  const found = (txt.match(/GAP-[A-Za-z0-9+/=]+/g)||[]);
-  const seen = {}; parsed=[];
-  found.forEach(c=>{ const o=dec(c); if(o && o.r && o.s && !seen[o.r]){ seen[o.r]=1; parsed.push(o); } });
-  parsed.sort((a,b)=>(ORDER[a.r]??9)-(ORDER[b.r]??9));
-  const h=document.getElementById('scanhint');
-  if(parsed.length===0) h.textContent='아직 코드가 없어요.';
-  else h.textContent = parsed.map(p=>p.r).join(' · ') + ' 코드를 찾았어요 ('+parsed.length+'명).';
-  document.getElementById('seebtn').disabled = parsed.length<2;
-  document.getElementById('seebtn').textContent = parsed.length<2 ? '비교 결과 보기' : '비교 결과 보기 ('+parsed.length+'명)';
-}
 
 const PAIRTEXT = {
   a:(H,L)=>({head:'에너지',
@@ -617,5 +606,4 @@ function reveal(){
   pairs();
   go('s-result');
 }
-function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 </script>
