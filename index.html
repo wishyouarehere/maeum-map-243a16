@@ -130,25 +130,18 @@
   <section class="scene on" id="s-home">
     <div class="eyebrow">우리집 마음 지도</div>
     <p class="lead">시험이 아니에요.<br>우리가 서로 얼마나 다른지 보는 거예요.</p>
-    <p class="sub">가족 각자가 같은 질문에 자기 자신을 두고 답해요. 맞고 틀린 답은 없어요. 끝나면 우리가 어떻게 다른지가 한눈에 보이고 — 각자 ‘이번 주에 해볼 작은 한 가지’를 골라요.</p>
-    <button class="btn block" style="margin-bottom:12px" onclick="startGroup()">다 같이, 폰 하나로 시작</button>
-    <p class="hint" style="text-align:center; margin:0 0 4px">한 명씩 답하고 옆 사람에게 넘기면 돼요. 제일 간단해요.</p>
-    <button class="ghost" onclick="go('s-solo')" style="display:block; text-align:center; width:100%">떨어져 있어요 · 각자 폰으로 (코드 교환) →</button>
-  </section>
-
-  <!-- 1b. 각자 폰 모드: 역할 선택 -->
-  <section class="scene" id="s-solo">
-    <div class="eyebrow">각자 폰으로</div>
-    <p class="lead" style="margin-bottom:6px">누가 하나요?</p>
-    <p class="sub">검사를 마치면 ‘GAP- 코드’가 나와요. 그걸 가족 단톡에 보내고, 다 모이면 누구든 비교 화면에서 붙여넣어요.</p>
+    <p class="sub">각자 같은 질문에 자기를 두고 답해요. 맞고 틀린 답은 없어요. 끝나면 우리가 어떻게 다른지 한눈에 보이고, 각자 ‘이번 주에 해볼 한 가지’를 골라요.</p>
+    <p class="hint" style="margin:0 0 8px">이 폰에서 검사할 사람을 골라요</p>
     <div class="who">
       <button onclick="start('아빠')"><span class="swatch" style="background:var(--dad)"></span><div>아빠가 할게요<small>나는 아빠</small></div></button>
       <button onclick="start('엄마')"><span class="swatch" style="background:var(--mom)"></span><div>엄마가 할게요<small>나는 엄마</small></div></button>
       <button onclick="start('서연')"><span class="swatch" style="background:var(--seoyeon)"></span><div>서연이가 할게요<small>나는 서연이</small></div></button>
       <button onclick="start('서빈')"><span class="swatch" style="background:var(--seobin)"></span><div>서빈이가 할게요<small>나는 서빈이</small></div></button>
     </div>
-    <button class="ghost" onclick="go('s-compare')">이미 다 했어요 · 코드로 비교 보기 →</button>
-    <button class="ghost" onclick="go('s-home')" style="display:block; text-align:center; width:100%">← 처음으로</button>
+    <div style="height:1px; background:var(--line); margin:24px 0 16px"></div>
+    <button onclick="go('s-compare')" style="width:100%; font-family:var(--body); font-size:15px; font-weight:600; padding:13px; border-radius:14px; border:1px solid var(--ink); background:none; color:var(--ink); cursor:pointer">결과 보기 · 코드 모아서 비교 →</button>
+    <p class="hint" style="text-align:center; margin:8px 0 0">가족이 코드를 다 보냈으면 여기서 모아 봐요.</p>
+    <button class="ghost" onclick="startGroup()" style="display:block; text-align:center; width:100%">한자리에 모였나요? 폰 하나로 다 같이 풀기 →</button>
   </section>
 
   <!-- 1c. 다 같이 모드: 차례 선택 -->
@@ -195,7 +188,7 @@
 
     <div class="card">
       <h3 style="font-size:17px; margin-bottom:4px">내 결과 코드</h3>
-      <p class="sub" style="margin:6px 0 0">이 코드를 가족 단톡에 보내요. 가족 코드가 모이면 누구든 비교 화면을 볼 수 있어요.</p>
+      <p class="sub" style="margin:6px 0 0">이 코드를 가족 단톡에 보내요. <b>이게 유일한 저장이에요</b> — 안 보내고 화면을 닫거나 새로고침하면 결과가 사라져요. 가족 코드가 다 모이면 누구든 ‘결과 보기’에서 붙여넣어요.</p>
       <div class="codebox" id="me-code">…</div>
       <button class="btn block" id="copybtn" onclick="copyCode()">코드 복사하기</button>
     </div>
