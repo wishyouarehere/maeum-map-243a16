@@ -1,0 +1,628 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>우리집 마음 지도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF6F3; --card:#FFFFFF; --ink:#2C2630; --muted:#8C8490;
+    --line:#ECE4DE; --track:#EBE3DD;
+    --seoyeon:#E8836B; --mom:#9B7BC4; --dad:#4FA8A0; --seobin:#E0A93B;
+    --shadow:0 10px 30px rgba(54,40,60,.07);
+    --r:18px;
+    --disp:'Gowun Dodum', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    --body:-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper); color:var(--ink); font-family:var(--body);
+    -webkit-font-smoothing:antialiased; line-height:1.6;
+    padding:max(20px,env(safe-area-inset-top)) 18px calc(40px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:480px; margin:0 auto}
+  h1,h2,h3{font-family:var(--disp); font-weight:400; letter-spacing:-.01em; margin:0}
+  .scene{display:none; animation:rise .45s ease both}
+  .scene.on{display:block}
+  @keyframes rise{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){.scene,.dot{animation:none!important; transition:none!important}}
+
+  .eyebrow{font-size:12px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase}
+  .lead{font-family:var(--disp); font-size:27px; line-height:1.35; margin:10px 0 14px}
+  .sub{color:var(--muted); font-size:15px; margin:0 0 26px}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:20px}
+  .card + .card{margin-top:14px}
+  .caption{font-size:13px; color:var(--muted); margin:0 0 16px; line-height:1.5}
+
+  .who{display:flex; flex-direction:column; gap:12px; margin-top:8px}
+  .who button{display:flex; align-items:center; gap:14px; width:100%; text-align:left;
+    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px 18px;
+    font-family:var(--body); font-size:17px; color:var(--ink); cursor:pointer; transition:.15s}
+  .who button:hover{border-color:var(--ink)}
+  .swatch{width:14px; height:14px; border-radius:50%; flex:none; display:inline-block}
+  .who small{display:block; color:var(--muted); font-size:13px; margin-top:2px}
+
+  .ghost{background:none; border:none; color:var(--muted); font-size:14px; text-decoration:underline;
+    text-underline-offset:3px; cursor:pointer; font-family:var(--body); padding:8px 0; margin-top:18px}
+
+  .top{display:flex; align-items:center; gap:12px; margin-bottom:22px}
+  .bar{flex:1; height:5px; background:var(--track); border-radius:99px; overflow:hidden}
+  .bar i{display:block; height:100%; width:0; background:var(--me,#bbb); border-radius:99px; transition:width .35s ease}
+  .count{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
+
+  .qnum{font-size:13px; color:var(--muted); letter-spacing:.04em}
+  .q{font-family:var(--disp); font-size:23px; line-height:1.45; margin:10px 0 26px; min-height:84px}
+  .scale{display:flex; flex-direction:column; gap:9px}
+  .scale button{font-family:var(--body); font-size:16px; text-align:left; padding:15px 18px; border-radius:14px;
+    border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; transition:.13s}
+  .scale button:hover{border-color:var(--me)}
+  .scale button.sel{border-color:var(--me); background:color-mix(in srgb, var(--me) 9%, #fff); font-weight:600}
+  .navrow{display:flex; justify-content:space-between; align-items:center; margin-top:20px}
+
+  .btn{font-family:var(--body); font-size:16px; font-weight:600; padding:14px 22px; border-radius:14px;
+    border:none; background:var(--ink); color:#fff; cursor:pointer; transition:.15s}
+  .btn:disabled{opacity:.32; cursor:default}
+  .btn.lite{background:none; color:var(--muted); padding-left:0}
+  .btn.block{width:100%; text-align:center}
+
+  .axis{margin:24px 0}
+  .axis h3{font-size:17px; margin-bottom:3px}
+  .axis .ends{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:14px}
+  .spectrum{position:relative; height:34px}
+  .spectrum .rail{position:absolute; top:50%; left:6px; right:6px; height:4px; transform:translateY(-50%);
+    background:var(--track); border-radius:99px}
+  .dot{position:absolute; top:50%; width:22px; height:22px; border-radius:50%; transform:translate(-50%,-50%) scale(0);
+    border:3px solid #fff; box-shadow:0 2px 7px rgba(0,0,0,.16); transition:left .6s cubic-bezier(.3,1.1,.4,1), transform .4s ease}
+  .dot.show{transform:translate(-50%,-50%) scale(1)}
+  .dot[data-r="서연"]{background:var(--seoyeon)} .dot[data-r="엄마"]{background:var(--mom)}
+  .dot[data-r="아빠"]{background:var(--dad)} .dot[data-r="서빈"]{background:var(--seobin)}
+  .gaptag{margin-top:9px; font-size:13px; color:var(--muted)}
+  .gaptag.big{color:var(--ink)}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin:4px 0 18px; font-size:13px}
+  .legend span{display:inline-flex; align-items:center; gap:6px; color:var(--muted)}
+
+  .sectitle{font-family:var(--disp); font-size:20px; margin:30px 0 4px}
+  .sectsub{font-size:13.5px; color:var(--muted); margin:0 0 14px}
+
+  .paircard{background:var(--card); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow);
+    padding:18px 20px; margin-bottom:14px}
+  .pairhead{display:flex; align-items:center; gap:8px; font-family:var(--disp); font-size:18px}
+  .pairhead .x{color:var(--muted); margin:0 2px}
+  .pairtag{font-size:12px; letter-spacing:.04em; color:var(--muted); margin:10px 0 14px}
+  .prow{margin:13px 0}
+  .prow b{display:block; font-size:13px; color:var(--ink); font-weight:700; margin-bottom:3px}
+  .prow p{margin:0; font-size:14.5px; color:#5a525f; line-height:1.62}
+  .pairsmall{font-size:14.5px; color:#5a525f; margin:12px 0 0}
+
+  .voice{border-left:3px solid var(--line); padding:6px 0 8px 14px; margin:14px 0}
+  .voice b{font-weight:600}
+  .voice .vlab{font-size:11.5px; letter-spacing:.06em; color:var(--muted); text-transform:uppercase; margin:8px 0 1px}
+  .voice p{margin:1px 0 0; color:#5a525f}
+  .voice p.empty{color:var(--muted)}
+
+  textarea{width:100%; font-family:var(--body); font-size:15px; border:1px solid var(--line); border-radius:14px;
+    padding:14px; resize:vertical; background:#fff; color:var(--ink)}
+  textarea:focus{outline:2px solid color-mix(in srgb,var(--ink) 30%,#fff); outline-offset:1px}
+  .chips{display:flex; flex-direction:column; gap:8px; margin:2px 0 14px}
+  .chip{text-align:left; font-family:var(--body); font-size:14.5px; line-height:1.5; padding:12px 14px;
+    border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; transition:.13s}
+  .chip:hover{border-color:var(--me)}
+  .chip.sel{border-color:var(--me); background:color-mix(in srgb, var(--me) 9%, #fff)}
+  .chip small{display:block; color:var(--muted); font-size:11.5px; margin-bottom:3px; letter-spacing:.03em}
+  .codebox{font-family:ui-monospace,Menlo,monospace; font-size:12px; word-break:break-all; background:#F4EEE9;
+    border-radius:12px; padding:13px; color:#6a6270; margin:12px 0}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0}
+  .fold{font-size:14px; color:var(--muted); cursor:pointer; user-select:none; margin-top:18px}
+  .fold + div{display:none; margin-top:10px}
+  .fold.open + div{display:block}
+  .raw{font-size:14px; color:#6a626f; padding:7px 0; border-bottom:1px dashed var(--line)}
+  .raw b{color:var(--ink); font-weight:600}
+  .mini{font-size:12.5px; color:var(--muted); text-align:center; margin-top:26px; line-height:1.7}
+</style>
+
+<div class="wrap">
+
+  <!-- 1. 시작 -->
+  <section class="scene on" id="s-home">
+    <div class="eyebrow">우리집 마음 지도</div>
+    <p class="lead">시험이 아니에요.<br>우리가 서로 얼마나 다른지 보는 거예요.</p>
+    <p class="sub">가족 각자가 같은 질문에 자기 자신을 두고 답해요. 맞고 틀린 답은 없어요. 끝나면 우리가 어떻게 다른지가 한눈에 보이고 — 각자 ‘이번 주에 해볼 작은 한 가지’를 골라요.</p>
+    <button class="btn block" style="margin-bottom:12px" onclick="startGroup()">다 같이, 폰 하나로 시작</button>
+    <p class="hint" style="text-align:center; margin:0 0 4px">한 명씩 답하고 옆 사람에게 넘기면 돼요. 제일 간단해요.</p>
+    <button class="ghost" onclick="go('s-solo')" style="display:block; text-align:center; width:100%">떨어져 있어요 · 각자 폰으로 (코드 교환) →</button>
+  </section>
+
+  <!-- 1b. 각자 폰 모드: 역할 선택 -->
+  <section class="scene" id="s-solo">
+    <div class="eyebrow">각자 폰으로</div>
+    <p class="lead" style="margin-bottom:6px">누가 하나요?</p>
+    <p class="sub">검사를 마치면 ‘GAP- 코드’가 나와요. 그걸 가족 단톡에 보내고, 다 모이면 누구든 비교 화면에서 붙여넣어요.</p>
+    <div class="who">
+      <button onclick="start('아빠')"><span class="swatch" style="background:var(--dad)"></span><div>아빠가 할게요<small>나는 아빠</small></div></button>
+      <button onclick="start('엄마')"><span class="swatch" style="background:var(--mom)"></span><div>엄마가 할게요<small>나는 엄마</small></div></button>
+      <button onclick="start('서연')"><span class="swatch" style="background:var(--seoyeon)"></span><div>서연이가 할게요<small>나는 서연이</small></div></button>
+      <button onclick="start('서빈')"><span class="swatch" style="background:var(--seobin)"></span><div>서빈이가 할게요<small>나는 서빈이</small></div></button>
+    </div>
+    <button class="ghost" onclick="go('s-compare')">이미 다 했어요 · 코드로 비교 보기 →</button>
+    <button class="ghost" onclick="go('s-home')" style="display:block; text-align:center; width:100%">← 처음으로</button>
+  </section>
+
+  <!-- 1c. 다 같이 모드: 차례 선택 -->
+  <section class="scene" id="s-turn">
+    <div class="eyebrow">다 같이 · 폰 하나로</div>
+    <p class="lead" style="margin-bottom:6px">지금 누구 차례예요?</p>
+    <p class="sub">한 명씩 자기 차례에 답하고, 끝나면 옆 사람에게 폰을 넘겨줘요.</p>
+    <div class="who" id="turn-roster"></div>
+    <button class="btn block" id="turn-result" disabled onclick="seeGroupResult()" style="margin-top:18px">우리 결과 보기</button>
+    <button class="ghost" onclick="go('s-home')" style="display:block; text-align:center; width:100%">← 처음으로</button>
+  </section>
+
+  <!-- 2. 검사 -->
+  <section class="scene" id="s-quiz">
+    <div class="top">
+      <div class="bar"><i id="prog"></i></div>
+      <div class="count"><span id="cur">1</span>/<span id="tot">15</span></div>
+    </div>
+    <div class="qnum" id="qcat"></div>
+    <div class="q" id="qtext"></div>
+    <div class="scale" id="scale"></div>
+    <div class="navrow">
+      <button class="btn lite" id="back" onclick="prev()">← 이전</button>
+      <span></span>
+    </div>
+  </section>
+
+  <!-- 3. 내 결과 -->
+  <section class="scene" id="s-me">
+    <div class="eyebrow" id="me-who"></div>
+    <p class="lead" style="margin-bottom:6px">나는 이런 사람이에요.</p>
+    <p class="sub">나만 보는 화면이에요. 내가 어떤 답을 했는지는 내 폰에만 남아요.</p>
+    <div class="card">
+      <p class="caption">여기 나온 건 ‘타고난 결’이에요. 높고 낮음에 좋고 나쁨은 없어요 — 그냥 나라는 사람의 방향이에요.</p>
+      <div id="me-axes"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:17px; margin-bottom:4px">이번 주에 해볼 나의 한 가지</h3>
+      <p class="sub" style="margin:6px 0 12px">딱 하나만 골라요. 내 결에 맞게 몇 개 추천해 뒀어요 — 마음에 드는 걸 누르거나, 직접 적어도 돼요. (이건 나만 봐요)</p>
+      <div class="chips" id="me-chips"></div>
+      <textarea id="me-one" rows="2" placeholder="또는 직접 적기"></textarea>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:17px; margin-bottom:4px">내 결과 코드</h3>
+      <p class="sub" style="margin:6px 0 0">이 코드를 가족 단톡에 보내요. 가족 코드가 모이면 누구든 비교 화면을 볼 수 있어요.</p>
+      <div class="codebox" id="me-code">…</div>
+      <button class="btn block" id="copybtn" onclick="copyCode()">코드 복사하기</button>
+    </div>
+
+    <p class="fold" onclick="this.classList.toggle('open')">내가 한 답 다시 보기 (나만 보임)</p>
+    <div id="me-raw"></div>
+
+    <button class="ghost" onclick="go('s-compare')" style="display:block; text-align:center; width:100%">가족 코드가 모였으면 · 비교 보기 →</button>
+  </section>
+
+  <!-- 3b. 다 같이 모드: 각자 미니 결과 -->
+  <section class="scene" id="s-turnme">
+    <div class="eyebrow" id="turn-who"></div>
+    <p class="lead" style="margin-bottom:6px">나는 이런 사람이에요.</p>
+    <p class="sub">좋고 나쁨은 없어요 — 그냥 나의 방향이에요.</p>
+    <div class="card"><div id="turn-axes"></div></div>
+    <div class="card">
+      <h3 style="font-size:17px; margin-bottom:4px">이번 주에 해볼 나의 한 가지</h3>
+      <p class="sub" style="margin:6px 0 12px">딱 하나만 골라요. 누르거나 직접 적어도 돼요.</p>
+      <div class="chips" id="turn-chips"></div>
+      <textarea id="turn-one" rows="2" placeholder="또는 직접 적기"></textarea>
+    </div>
+    <button class="btn block" onclick="saveTurn()">저장하고 다음 사람에게 넘기기 →</button>
+  </section>
+
+  <!-- 4. 비교 입력 -->
+  <section class="scene" id="s-compare">
+    <div class="eyebrow">비교 화면</div>
+    <p class="lead" style="margin-bottom:6px">가족 코드를 붙여넣어요.</p>
+    <p class="sub">단톡에 올라온 코드를 한꺼번에 붙여넣어도 돼요. 알아서 골라내요.</p>
+    <div class="card">
+      <textarea id="paste" rows="6" placeholder="GAP-…&#10;GAP-…&#10;GAP-…&#10;GAP-…" oninput="scan()"></textarea>
+      <div class="hint" id="scanhint">아직 코드가 없어요.</div>
+    </div>
+    <button class="btn block" id="seebtn" disabled onclick="reveal()">비교 결과 보기</button>
+    <button class="ghost" onclick="go('s-home')" style="display:block; text-align:center; width:100%">← 처음으로</button>
+  </section>
+
+  <!-- 5. 비교 결과 -->
+  <section class="scene" id="s-result">
+    <div class="eyebrow">비교 결과</div>
+    <p class="lead" style="margin-bottom:6px">다른 게 정상이에요.</p>
+    <p class="sub">아래 위치는 누가 더 낫다는 게 아니라 타고난 결이에요. 점 사이가 멀수록, 서로를 오해하기 쉬운 지점이에요.</p>
+    <div class="legend" id="legend"></div>
+    <div class="card" id="res-axes"></div>
+
+    <div class="sectitle">두 사람 사이엔</div>
+    <p class="sectsub">각 쌍에서 가장 멀리 떨어진 결 하나를 풀어 봤어요. 먼 쌍부터 보여요.</p>
+    <div id="res-pairs"></div>
+
+    <button class="ghost" onclick="go('s-home')" style="display:block; text-align:center; width:100%">← 처음으로</button>
+    <p class="mini">이건 진단이 아니라, 같이 얘기를 시작하기 위한 그림이에요.<br>한 번에 다 풀려 하지 말고, 가장 먼 카드 하나만 골라 천천히 얘기해 봐요.</p>
+  </section>
+
+</div>
+
+<script>
+const AXES = [
+  { key:'a', name:'에너지', left:'혼자 충전하는 편', right:'함께 충전하는 편',
+    items:[
+      '친구나 가족과 함께 있을 때 기운이 나요',
+      '새로운 사람들과 어울리는 게 즐거워요',
+      '심심할 때 누군가와 같이 있고 싶어요'
+    ],
+    kid:[
+      '친구나 가족이랑 같이 있으면 신나요',
+      '처음 보는 친구랑도 금방 친해져요',
+      '심심하면 누구랑 같이 있고 싶어요'
+    ]},
+  { key:'b', name:'감정의 깊이', left:'차분히 흘려보내는 편', right:'깊고 오래 느끼는 편',
+    items:[
+      '속상한 일은 가라앉는 데 시간이 오래 걸려요',
+      '누가 한 말이나 표정이 마음에 오래 남아요',
+      '감정이 올라오면 꽤 세게 느껴져요'
+    ],
+    kid:[
+      '속상하면 한참 동안 속상해요',
+      '누가 한 말이 자꾸 생각나요',
+      '기분이 안 좋으면 많이 안 좋아요'
+    ]},
+  { key:'c', name:'마음 꺼내는 법', left:'안에서 삭이는 편', right:'바로 말로 꺼내는 편',
+    items:[
+      '속상하면 누군가에게 바로 말하고 싶어요',
+      '내 기분을 말로 표현하는 게 어렵지 않아요',
+      '있었던 일을 가까운 사람한테 얘기하는 편이에요'
+    ],
+    kid:[
+      '속상하면 바로 말하고 싶어요',
+      '내 기분을 말로 잘 말해요',
+      '있었던 일을 엄마 아빠한테 잘 얘기해요'
+    ]},
+  { key:'d', name:'변화 앞에서', left:'익숙한 게 좋은 편', right:'새로운 게 좋은 편',
+    items:[
+      '늘 하던 것보다 새로운 걸 해보는 게 좋아요',
+      '처음 가는 곳·처음 하는 일이 설레요',
+      '계획이 갑자기 바뀌어도 별로 신경 안 써요'
+    ],
+    kid:[
+      '안 해본 걸 해보는 게 좋아요',
+      '처음 가는 곳이 재밌어요',
+      '하기로 한 게 바뀌어도 괜찮아요'
+    ]},
+  { key:'e', name:'부딪힘 앞에서', left:'한 발 물러나는 편', right:'바로 부딪혀 푸는 편',
+    items:[
+      '마음에 안 드는 게 있으면 바로 말하는 편이에요',
+      '다툼이 생겨도 피하지 않고 그 자리에서 풀고 싶어요',
+      '생각이 다르면 그냥 두기보다 말해요'
+    ],
+    kid:[
+      '싫은 게 있으면 바로 말해요',
+      '싸워도 도망 안 가고 바로 풀고 싶어요',
+      '생각이 다르면 그냥 안 두고 말해요'
+    ]}
+];
+const KIDS = ['서빈']; // 쉬운 워딩으로 보여줄 역할
+const SCALE = ['전혀 아니에요','별로 아니에요','중간이에요','꽤 그래요','정말 그래요'];
+const COLOR = {서연:'var(--seoyeon)', 엄마:'var(--mom)', 아빠:'var(--dad)', 서빈:'var(--seobin)'};
+const ORDER = {아빠:0, 엄마:1, 서연:2, 서빈:3};
+
+// 축·위치별 '나의 한 가지' 추천 풀 (H=오른쪽 끝, L=왼쪽 끝)
+const ONE_THING = {
+  a:{ H:['가족이 혼자 있고 싶어 할 때, 서운해 말고 “이따 같이 놀자” 하고 기다려 주기',
+         '같이 있고 싶을 때 “잠깐 옆에 있어도 돼?” 하고 먼저 물어보기'],
+      L:['충전하러 갈 때 말없이 사라지지 말고 “잠깐 혼자 있다 올게” 한마디 남기기',
+         '하루 한 번은 먼저 다가가 가족 옆에 잠깐 앉아 있기'] },
+  b:{ H:['마음에 오래 남은 일은 담아두지 말고, 그날 한 줄이라도 말하거나 적어 두기',
+         '다 설명하려 말고 “나 지금 좀 무거워” 한마디로 신호 주기'],
+      L:['가족이 오래 힘들어하면 “왜 아직도 그래” 대신 “아직 마음에 남았구나” 해주기',
+         '별일 아니어 보여도 “그랬구나” 하고 한 번 더 들어 주기'] },
+  c:{ H:['상대가 바로 답 안 해도 캐묻지 말고, 말할 때까지 시간 주기',
+         '묻기 전에 “지금 말해도 돼?” 하고 타이밍 먼저 확인하기'],
+      L:['다 말 안 해도 “오늘 좀 힘들었어” 한마디로 문 살짝 열어 두기',
+         '바로 말 못 할 땐 “이따 얘기할게” 하고 시점이라도 알려 주기'] },
+  d:{ H:['새로 해보자 하기 전에, 익숙한 걸 좋아하는 가족 속도 한 번 물어보기',
+         '내 방식만 밀지 말고, 늘 하던 방식도 한 번은 그대로 해보기'],
+      L:['가족이 새 걸 제안하면 “굳이?” 대신 한 번은 따라가 보기',
+         '변화가 불안할 때 거절 대신 “한 번만 해볼게” 해보기'] },
+  e:{ H:['바로 말하기 전에 한 박자 쉬고, 상대가 받을 준비가 됐는지 보기',
+         '지적보다 “이건 같이 풀고 싶어”로 시작하기'],
+      L:['피하고 싶을 때 “지금 말고 이따 얘기하자”로 시점이라도 정해 주기',
+         '참고 넘기기 전에 “나 사실 좀 그랬어” 한마디 꺼내 보기'] }
+};
+// 키즈용 추천 풀 (짧고 쉬운 한 가지 행동)
+const ONE_THING_KID = {
+  a:{ H:['가족이 혼자 있고 싶어 하면 “이따 같이 놀자” 하고 기다려 주기'],
+      L:['혼자 있고 싶을 때 “잠깐 있다 올게” 하고 말해 주기'] },
+  b:{ H:['속상한 게 오래 가면 “나 아직 속상해” 하고 말해 주기'],
+      L:['가족이 계속 속상해하면 “아직 속상하구나” 하고 들어 주기'] },
+  c:{ H:['가족이 바로 말 안 해도 기다려 주기'],
+      L:['말하기 싫어도 “나 오늘 좀 속상했어” 한마디 해 보기'] },
+  d:{ H:['새로운 거 하자고 하기 전에 가족한테 먼저 물어보기'],
+      L:['가족이 새로운 거 하자고 하면 한 번 같이 해 보기'] },
+  e:{ H:['화나도 한 번 숨 쉬고 천천히 말하기'],
+      L:['말하기 싫어도 “이따 얘기하자” 하고 말해 주기'] }
+};
+
+// 검사 문항은 역할(키즈 여부)에 따라 다시 생성한다
+let Q = [];
+function buildQ(role){
+  const kid = KIDS.includes(role);
+  Q = [];
+  AXES.forEach(ax => (kid?ax.kid:ax.items).forEach((t)=>Q.push({cat:ax.name, key:ax.key, text:t})));
+}
+buildQ(null);
+
+let me = { role:null, ans:Array(Q.length).fill(null), one:'' };
+let idx = 0;
+let mode = 'solo';                 // 'solo'(코드 교환) | 'group'(폰 하나 돌려쓰기)
+const ROSTER = ['아빠','엄마','서연','서빈'];
+let collected = [];                // group 모드에서 모은 결과 [{r,s,o}]
+
+function go(id){
+  document.querySelectorAll('.scene').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0,0);
+}
+function begin(role){
+  buildQ(role);
+  me = { role, kid:KIDS.includes(role), ans:Array(Q.length).fill(null), one:'' };
+  idx = 0;
+  document.documentElement.style.setProperty('--me', COLOR[role]);
+  document.getElementById('tot').textContent = Q.length;
+  go('s-quiz'); renderQ();
+}
+function start(role){ mode='solo'; begin(role); }    // 각자 폰 모드
+
+// ── 다 같이, 폰 하나로 ──
+function startGroup(){ mode='group'; collected=[]; renderTurn(); go('s-turn'); }
+function renderTurn(){
+  const box=document.getElementById('turn-roster'); box.innerHTML='';
+  const done = collected.map(c=>c.r);
+  ROSTER.forEach(role=>{
+    const b=document.createElement('button');
+    const fin = done.includes(role);
+    b.innerHTML='<span class="swatch" style="background:'+COLOR[role]+'"></span><div>'+
+      role+(fin?' <b style="color:'+COLOR[role]+'">✓ 했어요</b>':'')+'<small>'+(fin?'다시 하려면 눌러요':'아직이에요')+'</small></div>';
+    b.onclick=()=>startTurn(role);
+    box.appendChild(b);
+  });
+  const rb=document.getElementById('turn-result');
+  rb.disabled = collected.length<2;
+  rb.textContent = collected.length<2 ? '우리 결과 보기' : '우리 결과 보기 ('+collected.length+'명)';
+}
+function startTurn(role){ mode='group'; begin(role); }
+function saveTurn(){
+  const one = document.getElementById('turn-one').value.trim();
+  const rec = { r:me.role, s:scores(me.ans), o:one };
+  const i = collected.findIndex(c=>c.r===me.role);
+  if(i>=0) collected[i]=rec; else collected.push(rec);
+  renderTurn(); go('s-turn');
+}
+function seeGroupResult(){
+  parsed = collected.slice().sort((a,b)=>(ORDER[a.r]??9)-(ORDER[b.r]??9));
+  reveal();
+}
+function renderQ(){
+  const q = Q[idx];
+  document.getElementById('prog').style.width = (idx/Q.length)*100 + '%';
+  document.getElementById('cur').textContent = idx+1;
+  document.getElementById('qcat').textContent = q.cat;
+  document.getElementById('qtext').textContent = q.text;
+  const sc = document.getElementById('scale'); sc.innerHTML='';
+  SCALE.forEach((label,v)=>{
+    const b=document.createElement('button');
+    b.textContent=label;
+    if(me.ans[idx]===v+1) b.className='sel';
+    b.onclick=()=>{ me.ans[idx]=v+1; next(); };
+    sc.appendChild(b);
+  });
+  document.getElementById('back').style.visibility = idx===0?'hidden':'visible';
+}
+function next(){
+  if(idx < Q.length-1){ idx++; renderQ(); }
+  else { document.getElementById('prog').style.width='100%'; finish(); }
+}
+function prev(){ if(idx>0){ idx--; renderQ(); } }
+
+function scores(ans){
+  // Q는 AXES 순서·문항 순서대로 쌓이므로 위치(축*3+문항)로 채점 — 키즈 워딩이어도 동일
+  return AXES.map((ax,ai)=>{
+    const vals = [0,1,2].map(k=>ans[ai*3+k]);
+    const avg = vals.reduce((s,v)=>s+v,0)/vals.length;
+    return Math.round(avg*100)/100;
+  });
+}
+function pct(score){ return ((score-1)/4)*100; }
+
+function finish(){
+  const sc = scores(me.ans);
+  if(mode==='group'){
+    document.getElementById('turn-who').textContent = me.role + '의 결과';
+    const w = document.getElementById('turn-axes'); w.innerHTML='';
+    AXES.forEach((ax,i)=>{
+      w.appendChild(axisBlock(ax, [{role:me.role, p:pct(sc[i])}], false));
+    });
+    document.getElementById('turn-one').value='';
+    renderChips(sc, 'turn-chips', 'turn-one');
+    go('s-turnme');
+    return;
+  }
+  document.getElementById('me-who').textContent = me.role + '의 결과';
+  const wrap = document.getElementById('me-axes'); wrap.innerHTML='';
+  AXES.forEach((ax,i)=>{
+    wrap.appendChild(axisBlock(ax, [{role:me.role, p:pct(sc[i])}], false));
+  });
+  renderChips(sc, 'me-chips', 'me-one');
+  const raw = document.getElementById('me-raw'); raw.innerHTML='';
+  Q.forEach((q,i)=>{
+    const d=document.createElement('div'); d.className='raw';
+    d.innerHTML = q.text + ' — <b>'+SCALE[me.ans[i]-1]+'</b>';
+    raw.appendChild(d);
+  });
+  document.getElementById('me-one').value='';
+  buildCode();
+  go('s-me');
+}
+
+// 가장 튀는 축 3개의 해당 끝에서 추천 한 가지씩
+function renderChips(sc, chipsId, oneId){
+  const box = document.getElementById(chipsId); box.innerHTML='';
+  const ranked = AXES.map((ax,i)=>({ax, p:pct(sc[i]), dist:Math.abs(pct(sc[i])-50)}))
+                     .sort((a,b)=>b.dist-a.dist).slice(0,3);
+  const pool = me.kid ? ONE_THING_KID : ONE_THING;
+  ranked.forEach(r=>{
+    const end = r.p>=50 ? 'H' : 'L';
+    const text = pool[r.ax.key][end][0];
+    const c=document.createElement('button'); c.className='chip'; c.type='button';
+    c.innerHTML = '<small>'+r.ax.name+'</small>'+text;
+    c.onclick=()=>{
+      box.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));
+      c.classList.add('sel');
+      document.getElementById(oneId).value = text;
+    };
+    box.appendChild(c);
+  });
+}
+
+function axisBlock(ax, dots, withGap){
+  const el = document.createElement('div'); el.className='axis';
+  el.innerHTML = '<h3>'+ax.name+'</h3><div class="ends"><span>'+ax.left+'</span><span>'+ax.right+'</span></div>';
+  const sp = document.createElement('div'); sp.className='spectrum';
+  sp.innerHTML = '<div class="rail"></div>';
+  dots.forEach(d=>{
+    const dot=document.createElement('div'); dot.className='dot'; dot.dataset.r=d.role;
+    dot.style.left = '6px';
+    sp.appendChild(dot);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      dot.style.left = 'calc(6px + (100% - 12px) * '+(d.p/100)+')';
+      dot.classList.add('show');
+    }));
+  });
+  el.appendChild(sp);
+  if(withGap){
+    const ps = dots.map(d=>d.p);
+    const gap = Math.max(...ps)-Math.min(...ps);
+    const t=document.createElement('div'); t.className='gaptag';
+    if(gap>=40){ t.classList.add('big'); t.textContent='여기선 가족이 꽤 달라요 — 오해가 생기기 쉬운 지점이에요.'; }
+    else if(gap>=20){ t.textContent='조금 다른 편이에요.'; }
+    else { t.textContent='여긴 비슷해요.'; }
+    el.appendChild(t);
+  }
+  return el;
+}
+
+function enc(o){ return 'GAP-' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/,''); }
+function dec(code){
+  try{
+    let b = code.replace('GAP-','').trim();
+    while(b.length%4) b+='=';
+    return JSON.parse(decodeURIComponent(escape(atob(b))));
+  }catch(e){ return null; }
+}
+function buildCode(){
+  const sc = scores(me.ans);
+  const code = enc({ r:me.role, s:sc });   // 공유 코드엔 축 점수만 — 주관식은 본인 폰에만
+  document.getElementById('me-code').textContent = code;
+  me.code = code;
+}
+function copyCode(){
+  navigator.clipboard.writeText(me.code).then(()=>{
+    const b=document.getElementById('copybtn'); b.textContent='복사됐어요 ✓';
+    setTimeout(()=>b.textContent='코드 복사하기',1600);
+  }).catch(()=>{ alert('복사가 안 되면 위 코드를 길게 눌러 직접 복사하세요.'); });
+}
+
+let parsed = [];
+function scan(){
+  const txt = document.getElementById('paste').value;
+  const found = (txt.match(/GAP-[A-Za-z0-9+/=]+/g)||[]);
+  const seen = {}; parsed=[];
+  found.forEach(c=>{ const o=dec(c); if(o && o.r && o.s && !seen[o.r]){ seen[o.r]=1; parsed.push(o); } });
+  parsed.sort((a,b)=>(ORDER[a.r]??9)-(ORDER[b.r]??9));
+  const h=document.getElementById('scanhint');
+  if(parsed.length===0) h.textContent='아직 코드가 없어요.';
+  else h.textContent = parsed.map(p=>p.r).join(' · ') + ' 코드를 찾았어요 ('+parsed.length+'명).';
+  document.getElementById('seebtn').disabled = parsed.length<2;
+  document.getElementById('seebtn').textContent = parsed.length<2 ? '비교 결과 보기' : '비교 결과 보기 ('+parsed.length+'명)';
+}
+
+const PAIRTEXT = {
+  a:(H,L)=>({head:'에너지',
+    sit:H+'는 같이 있으며 풀고 싶은데 '+L+'는 떨어져서 충전해야 해요. '+H+'는 '+L+'가 거리를 두면 서운하고, '+L+'는 '+H+'가 자꾸 같이 있자 하면 버거워요.',
+    why:H+'는 사람들과 있을 때 기운이 차는 결이고, '+L+'는 혼자 있을 때 채워지는 결이에요. 둘 다 정상, 충전 방식만 달라요.',
+    fix:[H+' → '+L+'가 멀어지는 게 아니라 충전 중인 거라는 걸 알아두기', L+' → 혼자 가기 전에 "잠깐 충전하고 올게" 한마디 남기기']}),
+  b:(H,L)=>({head:'감정의 깊이',
+    sit:L+'한텐 그냥 지나갈 일이 '+H+'한텐 깊고 오래 남아요. '+L+'는 "왜 그걸로 그래?" 싶고, '+H+'는 "내 마음을 몰라준다"고 느껴요.',
+    why:H+'는 같은 일을 더 세게, 더 오래 느끼는 결이에요. 예민한 게 아니라 감지의 폭이 넓은 거예요. '+L+'는 빨리 털어내는 결이고요. 둘 다 정상, 강도만 달라요.',
+    fix:[L+' → "별거 아니야" 대신 "그렇게 느껴졌구나"로 먼저 받아주기', H+' → '+L+'가 무심한 게 아니라 빨리 회복하는 사람이라는 걸 알아두기']}),
+  c:(H,L)=>({head:'마음 꺼내는 법',
+    sit:H+'는 바로 말해야 풀리고 '+L+'는 안에서 삭여요. '+H+'는 '+L+'의 침묵을 "거부"로 읽고, '+L+'는 '+H+'의 질문을 "왜 자꾸 캐물어"로 느껴요.',
+    why:H+'한텐 말로 나누는 게 자연스럽고, '+L+'한텐 혼자 소화하는 게 편한 방식이에요. 말을 안 한다고 멀어진 게 아니에요.',
+    fix:[H+' → 질문으로 다가가는 대신 곁에 있어주기·메모 같은 다른 통로 열어주기', L+' → 다 말 안 해도 "오늘 좀 그랬어" 한마디로 문을 조금 열어두기']}),
+  d:(H,L)=>({head:'변화 앞에서',
+    sit:H+'는 새로운 걸 해보고 싶고 '+L+'는 늘 하던 게 편해요. '+H+'는 '+L+'이 답답하고, '+L+'는 자꾸 바뀌는 게 불안해요.',
+    why:H+'는 새로움에서 설렘을 얻고, '+L+'는 익숙함에서 안정을 얻는 결이에요. 둘 다 정상, 편안함의 자리만 달라요.',
+    fix:[H+' → 새 걸 밀기 전에 '+L+'의 속도도 한 번 물어봐 주기', L+' → "굳이?" 대신 한 번은 따라가 보기']}),
+  e:(H,L)=>({head:'부딪힘 앞에서',
+    sit:H+'는 그 자리에서 풀고 싶고 '+L+'는 한 발 물러나 가라앉혀요. '+H+'는 '+L+'의 회피가 답답하고, '+L+'는 '+H+'의 직면이 공격처럼 느껴져요.',
+    why:H+'는 바로 풀어야 편하고, '+L+'는 가라앉힌 뒤에 풀리는 결이에요. 어느 쪽도 잘못이 아니라 푸는 타이밍이 달라요.',
+    fix:[H+' → 바로 몰아붙이기 전에 한 박자 쉬어주기', L+' → 피하지만 말고 "이따 얘기하자"로 시점 정해주기']})
+};
+
+function pairs(){
+  const box=document.getElementById('res-pairs'); box.innerHTML='';
+  const list=[];
+  for(let i=0;i<parsed.length;i++)for(let j=i+1;j<parsed.length;j++){
+    const A=parsed[i], B=parsed[j];
+    let key='a', best=-1, H, L;
+    AXES.forEach((ax,k)=>{
+      const pa=pct(A.s[k]), pb=pct(B.s[k]);
+      const g=Math.abs(pa-pb);
+      if(g>best){ best=g; key=ax.key; if(pa>=pb){H=A.r;L=B.r;}else{H=B.r;L=A.r;} }
+    });
+    list.push({A,B,key,best,H,L});
+  }
+  list.sort((x,y)=>y.best-x.best);
+  list.forEach(({A,B,key,best,H,L})=>{
+    const c=document.createElement('div'); c.className='paircard';
+    let html='<div class="pairhead"><span class="swatch" style="background:'+COLOR[A.r]+'"></span>'+A.r+
+             '<span class="x">↔</span><span class="swatch" style="background:'+COLOR[B.r]+'"></span>'+B.r+'</div>';
+    if(best<18){
+      html+='<p class="pairsmall">이 둘은 결이 비슷한 편이에요. 큰 어긋남 없이 통하는 사이예요.</p>';
+    } else {
+      const t=PAIRTEXT[key](H,L);
+      html+='<div class="pairtag">가장 먼 곳 · '+t.head+'</div>';
+      html+='<div class="prow"><b>이런 일이 생겨요</b><p>'+t.sit+'</p></div>';
+      html+='<div class="prow"><b>왜냐면</b><p>'+t.why+'</p></div>';
+      html+='<div class="prow"><b>그래서</b><p>'+t.fix[0]+'<br>'+t.fix[1]+'</p></div>';
+    }
+    c.innerHTML=html; box.appendChild(c);
+  });
+}
+
+function reveal(){
+  const lg=document.getElementById('legend'); lg.innerHTML='';
+  parsed.forEach(p=>{
+    const s=document.createElement('span');
+    s.innerHTML='<span class="swatch" style="background:'+COLOR[p.r]+'"></span>'+p.r;
+    lg.appendChild(s);
+  });
+  const wrap=document.getElementById('res-axes'); wrap.innerHTML='';
+  AXES.forEach((ax,i)=>{
+    const dots = parsed.map(p=>({role:p.r, p:pct(p.s[i])}));
+    wrap.appendChild(axisBlock(ax, dots, true));
+  });
+  pairs();
+  go('s-result');
+}
+function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+</script>
